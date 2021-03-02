@@ -4,14 +4,13 @@ use std::ptr;
 use crate::error::{check_status, Error};
 use crate::receive_metadata::ReceiveMetadata;
 use crate::stream::StreamCommand;
-use crate::usrp::Usrp;
 use std::os::raw::c_void;
 
 /// A streamer used to receive samples from a USRP
 ///
 /// The type parameter I is the type of sample that this streamer receives.
 #[derive(Debug)]
-pub struct ReceiveStreamer<'usrp, I> {
+pub struct ReceiveStreamer<I> {
     /// Streamer handle
     handle: uhd_sys::uhd_rx_streamer_handle,
     /// A vector of pointers to buffers (used in receive() to convert `&mut [&mut [I]]` to `*mut *mut I`
@@ -20,13 +19,11 @@ pub struct ReceiveStreamer<'usrp, I> {
     /// Invariant: If this is not empty, its length is equal to the value returned by
     /// self.num_channels().
     buffer_pointers: Vec<*mut c_void>,
-    /// Link to the USRP that this streamer is associated with
-    usrp: PhantomData<&'usrp Usrp>,
     /// Item type phantom data
     item_phantom: PhantomData<I>,
 }
 
-impl<I> ReceiveStreamer<'_, I> {
+impl<I> ReceiveStreamer<I> {
     /// Creates a receive streamer with a null streamer handle (for internal use only)
     ///
     /// After creating a streamer with this function, its streamer handle must be initialized.
@@ -34,7 +31,6 @@ impl<I> ReceiveStreamer<'_, I> {
         ReceiveStreamer {
             handle: ptr::null_mut(),
             buffer_pointers: Vec::new(),
-            usrp: PhantomData,
             item_phantom: PhantomData,
         }
     }
@@ -152,7 +148,7 @@ fn check_equal_buffer_lengths<I>(buffers: &mut [&mut [I]]) -> usize {
         .unwrap_or(0)
 }
 
-impl<I> Drop for ReceiveStreamer<'_, I> {
+impl<I> Drop for ReceiveStreamer<I> {
     fn drop(&mut self) {
         let _ = unsafe { uhd_sys::uhd_rx_streamer_free(&mut self.handle) };
     }
@@ -162,5 +158,5 @@ impl<I> Drop for ReceiveStreamer<'_, I> {
 // All functions are thread-safe, except that the uhd_tx_streamer send(), uhd_rx_streamer recv(), and
 // uhd_rx_streamer recv_async_msg() functions. The corresponding Rust wrapper functions take &mut
 // self, which enforces single-thread access.
-unsafe impl<I> Send for ReceiveStreamer<'_, I> {}
-unsafe impl<I> Sync for ReceiveStreamer<'_, I> {}
+unsafe impl<I> Send for ReceiveStreamer<I> {}
+unsafe impl<I> Sync for ReceiveStreamer<I> {}

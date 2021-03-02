@@ -369,7 +369,7 @@ impl Usrp {
     }
 
     /// Opens a stream that can be used to receive samples
-    pub fn get_rx_stream<I>(&self, args: &StreamArgs<I>) -> Result<ReceiveStreamer<'_, I>, Error>
+    pub fn get_rx_stream<I>(&self, args: &StreamArgs<I>) -> Result<ReceiveStreamer<I>, Error>
     where
         I: Item,
     {
